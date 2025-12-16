@@ -1,0 +1,32 @@
+{
+  "name": "otr-bot",
+  "version": "1.0.0",
+  "description": "A discord bot for interacting with osu! Tournament Rating",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "rimraf ./dist && tsc && tsc-alias",
+    "deploy": "node ./dist/discord/scripts/deploy-commands.js --global",
+    "deploy:dev": "node ./dist/discord/scripts/deploy-commands.js",
+    "clear": "node ./dist/discord/scripts/clear-commands.js --global",
+    "clear:dev": "node ./dist/discord/scripts/clear-commands.js"
+  },
+  "author": "myssto",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.0.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.5.0",
+    "prettier": "^3.7.4",
+    "rimraf": "^6.1.2",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.0"
+  }
+}

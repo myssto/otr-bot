@@ -70,8 +70,7 @@ export class DiscordClient extends Client {
         console.log(`Error loading event handler from ${eventFile}`);
         console.log(err);
       }
-
-      console.log(`Bound ${eventFiles.length} events to the client.`);
     }
+    console.log(`Bound ${eventFiles.length} events to the client.`);
   }
 }

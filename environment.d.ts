@@ -8,5 +8,8 @@ declare namespace NodeJS {
 
     /** Id of the guild to deploy guild-scoped application commands. */
     DISCORD_DEV_GUILD_ID?: string;
+
+    /** osu! Tournament Rating API key */
+    OTR_API_KEY: string;
   }
 }

@@ -1,0 +1,17 @@
+{
+  "name": "@otr-discord-bot/bot",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "scripts": {
+    "start": "bun run .",
+    "dev": "bun --watch run .",
+    "deploy": "bun run ./src/discord/scripts/deploy-commands.ts --global",
+    "deploy:dev": "bun run ./src/discord/scripts/deploy-commands.ts",
+    "clear": "bun run ./src/discord/scripts/clear-commands.ts --global",
+    "clear:dev": "bun run ./src/discord/scripts/clear-commands.ts"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3"
+  }
+}

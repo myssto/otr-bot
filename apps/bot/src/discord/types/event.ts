@@ -1,4 +1,4 @@
-import { ClientEvents } from 'discord.js';
+import type { ClientEvents } from 'discord.js';
 
 /** Interfaces a handler for a discord event. */
 export interface IDiscordEventHandler<Event extends keyof ClientEvents> {

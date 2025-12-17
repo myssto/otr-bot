@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@lib/*": ["lib/*"],
+      "@discord/*": ["discord/*"]
+    }
+  },
+  "include": ["src/**/*", "./environment.d.ts"]
+}

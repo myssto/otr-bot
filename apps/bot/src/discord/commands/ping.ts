@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { IDiscordCommand, IDiscordCommandExecuteContext } from '../types/command';
+import type { IDiscordCommand, IDiscordCommandExecuteContext } from '../types/command';
 
 export default class PingCommand implements IDiscordCommand {
   name = 'ping';

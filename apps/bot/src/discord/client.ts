@@ -1,5 +1,5 @@
-import { Client, ClientOptions, Collection } from 'discord.js';
-import { IDiscordCommand, isDiscordCommand } from './types/command';
+import { type ClientOptions, Client, Collection } from 'discord.js';
+import { type IDiscordCommand, isDiscordCommand } from './types/command';
 import { isDiscordEventHandler } from './types/event';
 import { walkDir } from '@lib/util';
 import path from 'node:path';

@@ -1,23 +1,17 @@
 {
-  "name": "otr-bot",
+  "name": "otr-discord-bot",
+  "private": true,
   "version": "1.0.0",
   "description": "A discord bot for interacting with osu! Tournament Rating",
-  "main": "src/index.ts",
+  "license": "ISC",
+  "author": "myssto",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "bun run ./src/index.ts",
-    "dev": "bun --watch run ./src/index.ts",
-    "deploy": "bun run ./src/discord/scripts/deploy-commands.ts --global",
-    "deploy:dev": "bun run ./src//discord/scripts/deploy-commands.ts",
-    "clear": "bun run ./src//discord/scripts/clear-commands.ts --global",
-    "clear:dev": "bun run ./src//discord/scripts/clear-commands.ts",
     "lint": "bunx eslint --fix",
     "format": "bunx prettier --write ."
-  },
-  "author": "myssto",
-  "license": "ISC",
-  "dependencies": {
-    "discord.js": "^14.25.1",
-    "dotenv": "^17.2.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

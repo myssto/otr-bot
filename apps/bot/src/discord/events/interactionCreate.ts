@@ -1,7 +1,7 @@
-import { Interaction, CacheType, MessageFlags } from 'discord.js';
-import { IDiscordEventHandler } from '../types/event';
+import { type Interaction, type CacheType, MessageFlags } from 'discord.js';
+import type { IDiscordEventHandler } from '../types/event';
 import { DiscordClient } from '../client';
-import { IDiscordCommandExecuteContext } from '../types/command';
+import type { IDiscordCommandExecuteContext } from '../types/command';
 
 export default class InteractionCreateEventHandler implements IDiscordEventHandler<'interactionCreate'> {
   event = 'interactionCreate' as const;

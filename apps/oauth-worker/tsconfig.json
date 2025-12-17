@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@otr-discord-bot/shared": ["../../packages/shared/src/index.ts"]
+    },
+    "target": "es2024",
+    "lib": ["es2024"],
+    "jsx": "react-jsx",
+    "module": "es2022",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["worker-configuration.d.ts", "./worker-secrets.d.ts", "src/**/*.ts"]
+}

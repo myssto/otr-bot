@@ -1,12 +1,14 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"],
-      "@lib/*": ["lib/*"],
-      "@discord/*": ["discord/*"]
-    }
+      "@lib/*": ["src/lib/*"],
+      "@discord/*": ["src/discord/*"],
+      "@db/*": ["src/db/*"],
+      "@otr-discord-bot/shared": ["../../packages/shared/src/index.ts"]
+    },
+    "types": ["bun-types", "./environment.d.ts"]
   },
-  "include": ["src/**/*", "./environment.d.ts"]
+  "include": ["src/**/*", "./drizzle.config.ts"]
 }

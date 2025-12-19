@@ -15,5 +15,10 @@
     "allowSyntheticDefaultImports": true,
     "types": ["@cloudflare/workers-types"]
   },
-  "include": ["worker-configuration.d.ts", "./worker-secrets.d.ts", "src/**/*.ts"]
+  "include": [
+    "worker-configuration.d.ts",
+    "./worker-secrets.d.ts",
+    "src/**/*.ts",
+    "../../packages/shared/src/crypto.ts"
+  ]
 }

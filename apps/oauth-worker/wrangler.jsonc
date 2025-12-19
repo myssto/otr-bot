@@ -16,4 +16,5 @@
       "id": "b75be1b300224882bf276bbfaf6385d1",
     },
   ],
+  "compatibility_flags": ["nodejs_compat"],
 }

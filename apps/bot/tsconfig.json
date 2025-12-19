@@ -6,6 +6,7 @@
       "@lib/*": ["src/lib/*"],
       "@discord/*": ["src/discord/*"],
       "@db/*": ["src/db/*"],
+      "@otr": ["src/otr/index.ts"],
       "@otr-discord-bot/shared": ["../../packages/shared/src/index.ts"]
     },
     "types": ["bun-types", "./environment.d.ts"]

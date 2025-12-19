@@ -1,3 +1,4 @@
+import type { ColorResolvable } from 'discord.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -23,3 +24,7 @@ export function walkDir(dir: string): string[] {
 
   return results;
 }
+
+export const EmbedColors = {
+  OtrBlue: '#4D94FF',
+} satisfies Record<string, ColorResolvable>;

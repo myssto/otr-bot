@@ -1,13 +1,4 @@
-import {
-  Collection,
-  Colors,
-  EmbedBuilder,
-  inlineCode,
-  MessageFlags,
-  SlashCommandBuilder,
-  time,
-  TimestampStyles,
-} from 'discord.js';
+import { Collection, Colors, EmbedBuilder, inlineCode, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { IDiscordCommand, IDiscordCommandExecuteContext } from '../types/command';
 import {
   hmacSign,
@@ -34,7 +25,7 @@ const initialEmbed = (state: OAuthStatePayload): EmbedBuilder => {
   return new EmbedBuilder()
     .setColor(Colors.Blue)
     .setDescription(`{emoji} [Click here](${authUrl}) to link your osu! profile`)
-    .setFooter({ text: `Authorization attempt expires ${time(state.exp, TimestampStyles.RelativeTime)}` });
+    .setFooter({ text: `Contact myssto if you encounter any issues here!` });
 };
 
 const failEmbed = new EmbedBuilder()

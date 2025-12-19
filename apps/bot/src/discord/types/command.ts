@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SharedSlashCommand } from 'discord.js';
 import { DiscordClient } from '../client';
 
 /** Interfaces a discord command. */
@@ -7,7 +7,7 @@ export interface IDiscordCommand {
   name: string;
 
   /** Slash command data. */
-  commandData: SlashCommandBuilder;
+  commandData: SharedSlashCommand;
 
   /**
    * Called when the command is invoked.

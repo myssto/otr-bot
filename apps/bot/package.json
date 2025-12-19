@@ -14,7 +14,8 @@
     "@otr-discord-bot/shared": "workspace:*",
     "discord.js": "^14.25.1",
     "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.1",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.8"

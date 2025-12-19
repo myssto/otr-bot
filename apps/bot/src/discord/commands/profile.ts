@@ -1,7 +1,7 @@
 import type { IDiscordCommand, IDiscordCommandExecuteContext } from '@discord/types/command';
 import { countryFlag, profilePicture } from '@lib/osu';
 import { EmbedColors } from '@lib/util';
-import { getPlayerStats, otrProfile, Ruleset, tierToRoman, type PlayerStats } from '@otr';
+import { getPlayerStats, otrMatch, otrProfile, Ruleset, tierToRoman, type PlayerStats } from '@otr';
 import {
   ActionRowBuilder,
   bold,
@@ -57,12 +57,16 @@ const compactEmbed = (player: PlayerStats) => {
     `Tier: {emoji} ${player.rating.tierProgress.currentTier} ${tierToRoman(player.rating.tierProgress.currentSubTier)}\n` +
       `Percentile: ${inlineCode(player.rating.percentile.toFixed(2))}\n` +
       `Tournaments: ${inlineCode(player.rating.tournamentsPlayed.toString())}\n` +
-      `Matches: ${inlineCode(player.rating.matchesPlayed.toString())} (${inlineCode(player.rating.winRate.toFixed(2))}% W/L)\n` +
+      `Matches: ${inlineCode(player.rating.matchesPlayed.toString())} (${inlineCode((player.rating.winRate * 100).toFixed(2) + '%')} W/L)\n` +
       `Peak rating: ${inlineCode(highestRating!.ratingAfter.toFixed(2))} (${time(new Date(highestRating!.timestamp), TimestampStyles.ShortDate)})`
   );
 };
 
 const matchesEmbed = (player: PlayerStats) => {
+  const recentMatch = player.rating.adjustments
+    .filter((a) => a.adjustmentType === 2)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]!;
+
   return baseEmbed(player)
     .setDescription(`Showing detailed ${bold('match')} statistics:`)
     .addFields(
@@ -85,7 +89,13 @@ const matchesEmbed = (player: PlayerStats) => {
       { name: 'Avg. misses', value: player.matchStats.matchAverageMissesAggregate.toFixed(2), inline: true },
       { name: 'Avg. maps played', value: player.matchStats.averageGamesPlayedAggregate.toFixed(2), inline: true },
       { name: 'Maps won', value: player.matchStats.gamesWon.toString(), inline: true },
-      { name: 'Maps lost', value: player.matchStats.gamesLost.toString(), inline: true }
+      { name: 'Maps lost', value: player.matchStats.gamesLost.toString(), inline: true },
+      {
+        name: 'Most recent performance',
+        value:
+          `[${recentMatch.match!.name}](${otrMatch(recentMatch.matchId!)})\n` +
+          `${recentMatch.ratingBefore.toFixed(2)} TR => ${recentMatch.ratingAfter.toFixed(2)} TR (${inlineCode(recentMatch.ratingDelta.toFixed(2))})`,
+      }
     );
 };
 
@@ -111,7 +121,7 @@ export default class ProfileCommand implements IDiscordCommand {
 
   public async execute({ interaction }: IDiscordCommandExecuteContext): Promise<void> {
     await interaction.deferReply();
-    const player = await getPlayerStats(7470);
+    const player = await getPlayerStats(2904);
 
     if (!player) {
       await interaction.editReply({ content: 'xd' });

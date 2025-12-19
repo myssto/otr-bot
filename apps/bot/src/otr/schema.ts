@@ -24,7 +24,7 @@ export const tierProgressScehma = z.object({
   // enum? 1/2/3
   currentSubTier: z.number(),
   // enum
-  nextTier: z.string(),
+  nextTier: z.string().nullable(),
   // enum? 1/2/3
   nextSubTier: z.number().nullable(),
   ratingForNextTier: z.number(),

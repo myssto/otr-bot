@@ -1,7 +1,15 @@
 import type { IDiscordCommand, IDiscordCommandExecuteContext } from '@discord/types/command';
 import { countryFlag, profilePicture } from '@lib/osu';
 import { EmbedColors } from '@lib/util';
-import { getPlayerStats, otrMatch, otrProfile, Ruleset, tierToRoman, type PlayerStats } from '@otr';
+import {
+  getPlayerStats,
+  otrMatch,
+  otrProfile,
+  RatingAdjustmentType,
+  Ruleset,
+  tierToRoman,
+  type PlayerStats,
+} from '@otr';
 import {
   ActionRowBuilder,
   bold,
@@ -45,27 +53,27 @@ const baseEmbed = (player: PlayerStats): EmbedBuilder => {
       url: otrProfile(player.playerInfo.id),
     })
     .setFooter({
-      text: `First recorded tournament ${player.matchStats.periodStart}`,
+      text: `First recorded tournament ${player.matchStats.periodStart.toUTCString()}`,
       // iconURL: `ruleseticon`
     });
 };
 
 const compactEmbed = (player: PlayerStats) => {
-  const highestRating = player.rating.adjustments.sort((a, b) => b.ratingAfter - a.ratingAfter)[0];
+  const highestRating = player.rating.adjustments.sort((a, b) => b.ratingAfter - a.ratingAfter)[0]!;
 
   return baseEmbed(player).setDescription(
     `Tier: {emoji} ${player.rating.tierProgress.currentTier} ${tierToRoman(player.rating.tierProgress.currentSubTier)}\n` +
       `Percentile: ${inlineCode(player.rating.percentile.toFixed(2))}\n` +
       `Tournaments: ${inlineCode(player.rating.tournamentsPlayed.toString())}\n` +
       `Matches: ${inlineCode(player.rating.matchesPlayed.toString())} (${inlineCode((player.rating.winRate * 100).toFixed(2) + '%')} W/L)\n` +
-      `Peak rating: ${inlineCode(highestRating!.ratingAfter.toFixed(2))} (${time(new Date(highestRating!.timestamp), TimestampStyles.ShortDate)})`
+      `Peak rating: ${inlineCode(highestRating.ratingAfter.toFixed(2))} (${time(highestRating.timestamp, TimestampStyles.ShortDate)})`
   );
 };
 
 const matchesEmbed = (player: PlayerStats) => {
   const recentMatch = player.rating.adjustments
-    .filter((a) => a.adjustmentType === 2)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]!;
+    .filter((a) => a.adjustmentType === RatingAdjustmentType.Match)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0]!;
 
   return baseEmbed(player)
     .setDescription(`Showing detailed ${bold('match')} statistics:`)
@@ -91,7 +99,7 @@ const matchesEmbed = (player: PlayerStats) => {
       { name: 'Maps won', value: player.matchStats.gamesWon.toString(), inline: true },
       { name: 'Maps lost', value: player.matchStats.gamesLost.toString(), inline: true },
       {
-        name: 'Most recent performance',
+        name: `Most recent performance (${time(recentMatch.timestamp, TimestampStyles.RelativeTime)})`,
         value:
           `[${recentMatch.match!.name}](${otrMatch(recentMatch.matchId!)})\n` +
           `${recentMatch.ratingBefore.toFixed(2)} TR => ${recentMatch.ratingAfter.toFixed(2)} TR (${inlineCode(recentMatch.ratingDelta.toFixed(2))})`,

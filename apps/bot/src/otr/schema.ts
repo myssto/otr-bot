@@ -1,5 +1,5 @@
 import z from 'zod';
-import { Ruleset } from './enums';
+import { RatingAdjustmentType, RatingTiers, Ruleset } from './enums';
 
 export const playerInfoCompactSchema = z.object({
   id: z.number(),
@@ -19,12 +19,10 @@ export const playerInfoSchema = playerInfoCompactSchema.extend({
 export type PlayerInfo = z.infer<typeof playerInfoSchema>;
 
 export const tierProgressScehma = z.object({
-  // enum
-  currentTier: z.string(),
+  currentTier: z.enum(RatingTiers),
   // enum? 1/2/3
   currentSubTier: z.number(),
-  // enum
-  nextTier: z.string().nullable(),
+  nextTier: z.enum(RatingTiers).nullable(),
   // enum? 1/2/3
   nextSubTier: z.number().nullable(),
   ratingForNextTier: z.number(),
@@ -47,10 +45,8 @@ export type MatchCompact = z.infer<typeof matchCompactSchema>;
 
 export const ratingAdjustmentSchema = z.object({
   playerId: z.number(),
-  // enum
-  adjustmentType: z.number(),
-  // date
-  timestamp: z.string(),
+  adjustmentType: z.enum(RatingAdjustmentType),
+  timestamp: z.coerce.date(),
   ratingBefore: z.number(),
   ratingAfter: z.number(),
   volatilityBefore: z.number(),
@@ -98,10 +94,8 @@ export const matchStatsSchema = z.object({
   matchAverageAccuracyAggregate: z.number(),
   averageGamesPlayedAggregate: z.number(),
   averagePlacingAggregate: z.number(),
-  // date
-  periodStart: z.string(),
-  // date
-  periodEnd: z.string(),
+  periodStart: z.coerce.date(),
+  periodEnd: z.coerce.date(),
 });
 
 export type MatchStats = z.infer<typeof matchStatsSchema>;

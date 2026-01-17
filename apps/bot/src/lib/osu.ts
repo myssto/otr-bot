@@ -1,3 +1,3 @@
-export const countryFlag = (country: string) => `https://assets.ppy.sh/old-flags/${country}.png`;
+export const countryFlagLink = (country: string) => `https://assets.ppy.sh/old-flags/${country}.png`;
 
-export const profilePicture = (osuId: number) => `https://a.ppy.sh/${osuId}`;
+export const profilePictureLink = (osuId: number) => `https://a.ppy.sh/${osuId}`;

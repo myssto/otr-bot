@@ -1,5 +1,6 @@
 import z from 'zod';
 import { playerStatsSchema, type PlayerStats } from './schema';
+import { queryParamKeys, RequestKeyType, Ruleset } from './enums';
 
 const OTR_API_BASEURL = 'https://otr.stagec.xyz/api';
 const apiRoute = (endpoint: string) => `${OTR_API_BASEURL}${endpoint}`;
@@ -35,7 +36,15 @@ async function fetchWrap<T extends z.ZodObject>(
   }
 }
 
-export async function getPlayerStats(id: number): Promise<PlayerStats | undefined> {
+export async function getPlayerStats(
+  id: number | string,
+  keyType: RequestKeyType,
+  ruleset?: Ruleset | null
+): Promise<PlayerStats | undefined> {
   const url = new URL(apiRoute(`/players/${id}/stats`));
+  url.searchParams.set(queryParamKeys.KeyType, keyType);
+  if (ruleset) {
+    url.searchParams.set(queryParamKeys.Ruleset, ruleset.toString());
+  }
   return fetchWrap(playerStatsSchema, url);
 }

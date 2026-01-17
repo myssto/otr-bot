@@ -1,18 +1,21 @@
 import type { IDiscordCommand, IDiscordCommandExecuteContext } from '@discord/types/command';
-import { countryFlag, profilePicture } from '@lib/osu';
-import { EmbedColors } from '@lib/util';
+import { countryFlagLink, profilePictureLink } from '@lib/osu';
+import { countryCodeToEmoji, EmbedColors } from '@lib/util';
 import {
   getPlayerStats,
-  otrMatch,
-  otrProfile,
+  otrMatchLink,
+  otrProfileLink,
   RatingAdjustmentType,
+  RequestKeyType,
   Ruleset,
+  signedRatingDelta,
   tierToRoman,
   type PlayerStats,
 } from '@otr';
 import {
   ActionRowBuilder,
   bold,
+  ChatInputCommandInteraction,
   ComponentType,
   EmbedBuilder,
   inlineCode,
@@ -21,36 +24,76 @@ import {
   time,
   TimestampStyles,
 } from 'discord.js';
+import { eq } from 'drizzle-orm';
+import { db, users } from '@db';
 
-type SelectMenuValues = 'compact' | 'matches';
+// TODO:
+// - emojis (tiers, mods)
+// - validate profile data (provisional ratings)
+// - err handling for data fetching
 
-const actionRow = (selected: SelectMenuValues) => {
+const optionKeys = {
+  Ruleset: 'ruleset',
+  Username: 'username',
+  Discord: 'discord',
+};
+
+const actionRowCustomId = 'profile-select';
+
+type SelectMenuValues = 'compact' | 'match-performance' | 'recent-matches' | 'player-frequency' | 'mods';
+
+type EmbedBuilderWrapper = (player: PlayerStats) => EmbedBuilder;
+
+const buildActionRow = (selected: SelectMenuValues) => {
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-    new StringSelectMenuBuilder().setCustomId('profile-select').addOptions(
+    new StringSelectMenuBuilder().setCustomId(actionRowCustomId).addOptions(
       {
         label: 'Compact',
         value: 'compact',
         description: 'Compact player statistics.',
+        emoji: '🏆',
         default: selected === 'compact',
       },
       {
-        label: 'Matches',
-        value: 'matches',
-        description: 'Player match performance statistics',
-        default: selected === 'matches',
+        label: 'Match Performance',
+        value: 'match-performance',
+        description: 'Match performance statistics.',
+        emoji: '⚔️',
+        default: selected === 'match-performance',
+      },
+      {
+        label: 'Recent Matches',
+        value: 'recent-matches',
+        description: 'Recent match performances.',
+        emoji: '🔁',
+        default: selected === 'recent-matches',
+      },
+      {
+        label: 'Player Frequencies',
+        value: 'player-frequency',
+        description: 'Frequent tournament teammates and opponents.',
+        emoji: '👥',
+        default: selected === 'player-frequency',
+      },
+      {
+        label: 'Mod Performance',
+        value: 'mods',
+        description: 'Modded performance statistics.',
+        emoji: '⚙️',
+        default: selected === 'mods',
       }
     )
   );
 };
 
-const baseEmbed = (player: PlayerStats): EmbedBuilder => {
+const baseEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
   return new EmbedBuilder()
     .setColor(EmbedColors.OtrBlue)
-    .setThumbnail(profilePicture(player.playerInfo.osuId))
+    .setThumbnail(profilePictureLink(player.playerInfo.osuId))
     .setAuthor({
       name: `${player.playerInfo.username}: ${player.rating.rating.toFixed(2)} TR (#${player.rating.globalRank} • ${player.playerInfo.country}#${player.rating.countryRank})`,
-      iconURL: countryFlag(player.playerInfo.country),
-      url: otrProfile(player.playerInfo.id),
+      iconURL: countryFlagLink(player.playerInfo.country),
+      url: otrProfileLink(player.playerInfo.id),
     })
     .setFooter({
       text: `First recorded tournament ${player.matchStats.periodStart.toUTCString()}`,
@@ -58,7 +101,7 @@ const baseEmbed = (player: PlayerStats): EmbedBuilder => {
     });
 };
 
-const compactEmbed = (player: PlayerStats) => {
+const compactEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
   const highestRating = player.rating.adjustments.sort((a, b) => b.ratingAfter - a.ratingAfter)[0]!;
 
   return baseEmbed(player).setDescription(
@@ -70,7 +113,7 @@ const compactEmbed = (player: PlayerStats) => {
   );
 };
 
-const matchesEmbed = (player: PlayerStats) => {
+const matchPerformanceEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
   const recentMatch = player.rating.adjustments
     .filter((a) => a.adjustmentType === RatingAdjustmentType.Match)
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0]!;
@@ -86,7 +129,7 @@ const matchesEmbed = (player: PlayerStats) => {
       { name: 'Avg. placement', value: player.matchStats.averagePlacingAggregate.toFixed(2), inline: true },
       {
         name: 'Avg. score',
-        value: Number(player.matchStats.matchAverageScoreAggregate.toFixed(0)).toLocaleString(),
+        value: (~~player.matchStats.matchAverageScoreAggregate).toLocaleString(),
         inline: true,
       },
       {
@@ -101,10 +144,102 @@ const matchesEmbed = (player: PlayerStats) => {
       {
         name: `Most recent performance (${time(recentMatch.timestamp, TimestampStyles.RelativeTime)})`,
         value:
-          `[${recentMatch.match!.name}](${otrMatch(recentMatch.matchId!)})\n` +
-          `${recentMatch.ratingBefore.toFixed(2)} TR => ${recentMatch.ratingAfter.toFixed(2)} TR (${inlineCode(recentMatch.ratingDelta.toFixed(2))})`,
+          `[${recentMatch.match!.name}](${otrMatchLink(recentMatch.matchId!)})\n` +
+          `${recentMatch.ratingBefore.toFixed(2)} TR => ${recentMatch.ratingAfter.toFixed(2)} TR (${inlineCode(signedRatingDelta(recentMatch.ratingDelta))})`,
       }
     );
+};
+
+const recentMatchesEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+  const matches = player.rating.adjustments
+    .filter((ms) => ms.adjustmentType === RatingAdjustmentType.Match)
+    .slice(0, 6);
+
+  return baseEmbed(player)
+    .setDescription(`Showing ${bold('recent match')} performances:`)
+    .addFields(
+      ...matches.map((ms) => ({
+        name: '',
+        value:
+          `**[${ms.match!.name}](${otrMatchLink(ms.matchId!)})** ${time(ms.timestamp, TimestampStyles.RelativeTime)}\n` +
+          `${ms.ratingBefore.toFixed(2)} TR => ${ms.ratingAfter.toFixed(2)} TR (${inlineCode(signedRatingDelta(ms.ratingDelta))})`,
+      }))
+    );
+};
+
+const playerFrequencyEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+  const padding = { name: '', value: '', inline: true };
+
+  return baseEmbed(player)
+    .setDescription(`Showing ${bold('player frequency')} statistics:`)
+    .addFields(
+      { name: 'Teammate', value: '', inline: true },
+      { name: 'Appearances', value: '', inline: true },
+      padding,
+      ...player.frequentTeammates.slice(0, 3).flatMap((f) => [
+        {
+          name: '',
+          value: `${countryCodeToEmoji(f.player.country)}  [${f.player.username}](${otrProfileLink(f.player.id)})`,
+          inline: true,
+        },
+        {
+          name: '',
+          value: f.frequency.toString(),
+          inline: true,
+        },
+        padding,
+      ]),
+      { name: 'Opponent', value: '', inline: true },
+      { name: 'Appearances', value: '', inline: true },
+      padding,
+      ...player.frequentOpponents.slice(0, 3).flatMap((f) => [
+        {
+          name: '',
+          value: `${countryCodeToEmoji(f.player.country)} [${f.player.username}](${otrProfileLink(f.player.id)})`,
+          inline: true,
+        },
+        {
+          name: '',
+          value: f.frequency.toString(),
+          inline: true,
+        },
+        padding,
+      ])
+    );
+};
+
+const modsEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+  return baseEmbed(player)
+    .setDescription(`Showing detailed ${bold('modded performance')} statistics:`)
+    .addFields(
+      { name: 'Mod', value: '', inline: true },
+      { name: 'Play Count', value: '', inline: true },
+      { name: 'Avg. Score', value: '', inline: true },
+      ...player.modStats
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6)
+        .flatMap((ms) => [
+          // TODO: mod emoji
+          { name: '', value: ms.mods.toString(), inline: true },
+          { name: '', value: ms.count.toString(), inline: true },
+          { name: '', value: (~~ms.averageScore).toLocaleString(), inline: true },
+        ])
+    );
+};
+
+const buildEmbed = (embed: SelectMenuValues): EmbedBuilderWrapper => {
+  switch (embed) {
+    case 'match-performance':
+      return matchPerformanceEmbed;
+    case 'recent-matches':
+      return recentMatchesEmbed;
+    case 'player-frequency':
+      return playerFrequencyEmbed;
+    case 'mods':
+      return modsEmbed;
+    default:
+      return compactEmbed;
+  }
 };
 
 export default class ProfileCommand implements IDiscordCommand {
@@ -114,7 +249,7 @@ export default class ProfileCommand implements IDiscordCommand {
     .setDescription('Display statistics of a user.')
     .addIntegerOption((o) =>
       o
-        .setName('ruleset')
+        .setName(optionKeys.Ruleset)
         .setDescription('Specify a ruleset.')
         .addChoices(
           { name: 'Osu', value: Ruleset.Osu },
@@ -124,53 +259,62 @@ export default class ProfileCommand implements IDiscordCommand {
           { name: 'Mania 7k', value: Ruleset.Mania7k }
         )
     )
-    .addStringOption((o) => o.setName('username').setDescription('Specify an osu! username.'))
-    .addUserOption((o) => o.setName('discord').setDescription('Specify a linked Discord user.'));
+    .addStringOption((o) => o.setName(optionKeys.Username).setDescription('Specify an osu! username.'))
+    .addUserOption((o) => o.setName(optionKeys.Discord).setDescription('Specify a linked Discord user.'));
 
   public async execute({ interaction }: IDiscordCommandExecuteContext): Promise<void> {
     await interaction.deferReply();
-    const player = await getPlayerStats(2904);
 
+    // const player = await this.getPlayerFromOptions(interaction);
+    const player = await getPlayerStats('mrekk', RequestKeyType.Username);
     if (!player) {
+      // TODO: handle this error
       await interaction.editReply({ content: 'xd' });
       return;
     }
 
     // Send initial compact embed
-    let currentEmbed: SelectMenuValues = 'compact';
     const reply = await interaction.editReply({
-      embeds: [this.pickEmbedBuilder(currentEmbed)(player)],
-      components: [actionRow(currentEmbed)],
+      embeds: [buildEmbed('compact')(player)],
+      components: [buildActionRow('compact')],
     });
 
     const collector = reply.createMessageComponentCollector({
       componentType: ComponentType.StringSelect,
-      filter: (i) => i.user.id === interaction.user.id && i.customId === 'profile-select',
-      time: 60_000,
+      filter: (i) => i.user.id === interaction.user.id && i.customId === actionRowCustomId,
+      idle: 60_000,
     });
 
     // Listen for menu interactions
     collector.on('collect', async (i) => {
       const embed = i.values[0] as SelectMenuValues;
-      currentEmbed = embed;
       await i.update({
-        embeds: [this.pickEmbedBuilder(embed)(player)],
-        components: [actionRow(embed)],
+        embeds: [buildEmbed(embed)(player)],
+        components: [buildActionRow(embed)],
       });
     });
 
+    // Clear select menu
     collector.once('end', async () => {
-      // Clear select menu
       await interaction.editReply({ components: [] });
     });
   }
 
-  private pickEmbedBuilder(embed: SelectMenuValues): (player: PlayerStats) => EmbedBuilder {
-    switch (embed) {
-      case 'matches':
-        return matchesEmbed;
-      default:
-        return compactEmbed;
+  private async getPlayerFromOptions(interaction: ChatInputCommandInteraction): Promise<PlayerStats | undefined> {
+    const ruleset = interaction.options.getInteger(optionKeys.Ruleset) as Ruleset | null;
+    const discordUser = interaction.options.getUser(optionKeys.Discord);
+    const osuUsername = interaction.options.getString(optionKeys.Username);
+
+    if (osuUsername) {
+      return getPlayerStats(osuUsername, RequestKeyType.Username, ruleset);
     }
+
+    const target = discordUser ? discordUser.id : interaction.user.id;
+    const [user] = await db.select().from(users).where(eq(users.id, target));
+    if (!user) {
+      return;
+    }
+
+    return getPlayerStats(user.osuId, RequestKeyType.Osu, ruleset);
   }
 }

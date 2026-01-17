@@ -25,6 +25,21 @@ export function walkDir(dir: string): string[] {
   return results;
 }
 
+/** Map of Discord embed colors. */
 export const EmbedColors = {
   OtrBlue: '#4D94FF',
 } satisfies Record<string, ColorResolvable>;
+
+/**
+ * Converts an ISO country code to it's unicode flag emoji
+ * @param code Country code
+ * @returns Unicode flag emoji
+ */
+export function countryCodeToEmoji(code: string): string {
+  const OFFSET = 127397;
+  const codePoints = code
+    .toUpperCase()
+    .split('')
+    .map((char) => char.charCodeAt(0) + OFFSET);
+  return String.fromCodePoint(...codePoints);
+}

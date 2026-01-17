@@ -11,8 +11,7 @@ import {
   type OAuthStatePayload,
   type OAuthStatusResponse,
 } from '@otr-discord-bot/shared';
-import { users, type User } from '@db/schema';
-import { db } from '@db/index';
+import { db, users, type User } from '@db';
 
 const initialEmbed = (state: OAuthStatePayload): EmbedBuilder => {
   const authUrl = new URL('https://osu.ppy.sh/oauth/authorize');

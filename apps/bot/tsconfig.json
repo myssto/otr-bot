@@ -5,7 +5,7 @@
     "paths": {
       "@lib/*": ["src/lib/*"],
       "@discord/*": ["src/discord/*"],
-      "@db/*": ["src/db/*"],
+      "@db": ["src/db/index.ts"],
       "@otr": ["src/otr/index.ts"],
       "@otr-discord-bot/shared": ["../../packages/shared/src/index.ts"]
     },

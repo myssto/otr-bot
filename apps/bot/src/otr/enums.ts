@@ -31,6 +31,9 @@ export const RatingAdjustmentType = {
 
   /** Adjustment due to the outcome of a match. */
   Match: 2,
+
+  /** TODO: what this */
+  VolatilityDecay: 3,
 } as const;
 
 export type RatingAdjustmentType = (typeof RatingAdjustmentType)[keyof typeof RatingAdjustmentType];
@@ -95,3 +98,18 @@ export const RatingTiers = {
 export type RatingTiers = (typeof RatingTiers)[keyof typeof RatingTiers];
 
 export const SubTiers = [1, 2, 3] as const;
+
+export const RequestKeyType = {
+  Otr: 'otr',
+
+  Osu: 'osuId',
+
+  Username: 'username',
+} as const;
+
+export type RequestKeyType = (typeof RequestKeyType)[keyof typeof RequestKeyType];
+
+export const queryParamKeys = {
+  KeyType: 'keyType',
+  Ruleset: 'ruleset',
+};

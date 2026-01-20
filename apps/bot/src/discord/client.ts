@@ -3,10 +3,12 @@ import { type IDiscordCommand, isDiscordCommand } from './types/command';
 import { isDiscordEventHandler } from './types/event';
 import { walkDir } from '@lib/util';
 import path from 'node:path';
+import { EmojiManager } from './emojis/emoji-manager';
 
 export class DiscordClient extends Client {
   /** Collection of available commands. */
-  commands: Collection<string, IDiscordCommand> = new Collection();
+  public commands: Collection<string, IDiscordCommand> = new Collection();
+  public emojiManager: EmojiManager = new EmojiManager(this);
 
   constructor(options: ClientOptions) {
     super(options);

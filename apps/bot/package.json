@@ -8,7 +8,8 @@
     "deploy": "bun run ./src/discord/scripts/deploy-commands.ts --global",
     "deploy:dev": "bun run ./src/discord/scripts/deploy-commands.ts",
     "clear": "bun run ./src/discord/scripts/clear-commands.ts --global",
-    "clear:dev": "bun run ./src/discord/scripts/clear-commands.ts"
+    "clear:dev": "bun run ./src/discord/scripts/clear-commands.ts",
+    "emoji-sync": "bun run ./src/discord/scripts/emoji-sync.ts"
   },
   "dependencies": {
     "@otr-discord-bot/shared": "workspace:*",

@@ -26,6 +26,7 @@ import {
 } from 'discord.js';
 import { eq } from 'drizzle-orm';
 import { db, users } from '@db';
+import type { DiscordClient } from '@discord/client';
 
 // TODO:
 // - emojis (tiers, mods)
@@ -42,7 +43,7 @@ const actionRowCustomId = 'profile-select';
 
 type SelectMenuValues = 'compact' | 'match-performance' | 'recent-matches' | 'player-frequency' | 'mods';
 
-type EmbedBuilderWrapper = (player: PlayerStats) => EmbedBuilder;
+type EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => EmbedBuilder;
 
 const buildActionRow = (selected: SelectMenuValues) => {
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -101,11 +102,11 @@ const baseEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
     });
 };
 
-const compactEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+const compactEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
   const highestRating = player.rating.adjustments.sort((a, b) => b.ratingAfter - a.ratingAfter)[0]!;
 
-  return baseEmbed(player).setDescription(
-    `Tier: {emoji} ${player.rating.tierProgress.currentTier} ${tierToRoman(player.rating.tierProgress.currentSubTier)}\n` +
+  return baseEmbed(player, client).setDescription(
+    `Tier: ${client.emojiManager.getTierEmoji(player.rating.tierProgress.currentTier, player.rating.tierProgress.currentSubTier)} ${player.rating.tierProgress.currentTier} ${tierToRoman(player.rating.tierProgress.currentSubTier)}\n` +
       `Percentile: ${inlineCode(player.rating.percentile.toFixed(2))}\n` +
       `Tournaments: ${inlineCode(player.rating.tournamentsPlayed.toString())}\n` +
       `Matches: ${inlineCode(player.rating.matchesPlayed.toString())} (${inlineCode((player.rating.winRate * 100).toFixed(2) + '%')} W/L)\n` +
@@ -113,12 +114,12 @@ const compactEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
   );
 };
 
-const matchPerformanceEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+const matchPerformanceEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
   const recentMatch = player.rating.adjustments
     .filter((a) => a.adjustmentType === RatingAdjustmentType.Match)
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0]!;
 
-  return baseEmbed(player)
+  return baseEmbed(player, client)
     .setDescription(`Showing detailed ${bold('match')} statistics:`)
     .addFields(
       { name: 'Played', value: player.matchStats.matchesPlayed.toString(), inline: true },
@@ -150,12 +151,12 @@ const matchPerformanceEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
     );
 };
 
-const recentMatchesEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+const recentMatchesEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
   const matches = player.rating.adjustments
     .filter((ms) => ms.adjustmentType === RatingAdjustmentType.Match)
     .slice(0, 6);
 
-  return baseEmbed(player)
+  return baseEmbed(player, client)
     .setDescription(`Showing ${bold('recent match')} performances:`)
     .addFields(
       ...matches.map((ms) => ({
@@ -167,10 +168,10 @@ const recentMatchesEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
     );
 };
 
-const playerFrequencyEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
+const playerFrequencyEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
   const padding = { name: '', value: '', inline: true };
 
-  return baseEmbed(player)
+  return baseEmbed(player, client)
     .setDescription(`Showing ${bold('player frequency')} statistics:`)
     .addFields(
       { name: 'Teammate', value: '', inline: true },
@@ -208,8 +209,8 @@ const playerFrequencyEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
     );
 };
 
-const modsEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
-  return baseEmbed(player)
+const modsEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
+  return baseEmbed(player, client)
     .setDescription(`Showing detailed ${bold('modded performance')} statistics:`)
     .addFields(
       { name: 'Mod', value: '', inline: true },
@@ -262,7 +263,7 @@ export default class ProfileCommand implements IDiscordCommand {
     .addStringOption((o) => o.setName(optionKeys.Username).setDescription('Specify an osu! username.'))
     .addUserOption((o) => o.setName(optionKeys.Discord).setDescription('Specify a linked Discord user.'));
 
-  public async execute({ interaction }: IDiscordCommandExecuteContext): Promise<void> {
+  public async execute({ interaction, client }: IDiscordCommandExecuteContext): Promise<void> {
     await interaction.deferReply();
 
     // const player = await this.getPlayerFromOptions(interaction);
@@ -275,7 +276,7 @@ export default class ProfileCommand implements IDiscordCommand {
 
     // Send initial compact embed
     const reply = await interaction.editReply({
-      embeds: [buildEmbed('compact')(player)],
+      embeds: [buildEmbed('compact')(player, client)],
       components: [buildActionRow('compact')],
     });
 
@@ -289,7 +290,7 @@ export default class ProfileCommand implements IDiscordCommand {
     collector.on('collect', async (i) => {
       const embed = i.values[0] as SelectMenuValues;
       await i.update({
-        embeds: [buildEmbed(embed)(player)],
+        embeds: [buildEmbed(embed)(player, client)],
         components: [buildActionRow(embed)],
       });
     });

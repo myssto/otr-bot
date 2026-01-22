@@ -102,7 +102,7 @@ export const SubTiers = [1, 2, 3] as const;
 export const RequestKeyType = {
   Otr: 'otr',
 
-  Osu: 'osuId',
+  Osu: 'osu',
 
   Username: 'username',
 } as const;
@@ -113,3 +113,42 @@ export const queryParamKeys = {
   KeyType: 'keyType',
   Ruleset: 'ruleset',
 };
+
+export enum Mods {
+  NM = 0,
+  NF = 1,
+  EZ = 2,
+  TD = 4,
+  HD = 8,
+  HR = 16,
+  SD = 32,
+  DT = 64,
+  RX = 128,
+  HT = 256,
+  NC = 512,
+  FL = 1024,
+  AP = 2048,
+  SO = 4096,
+  Relax2 = 8192,
+  PF = 16384,
+  InvalidMods = 22688,
+  '4K' = 32768,
+  '5K' = 65536,
+  '6K' = 131072,
+  '7K' = 262144,
+  '8K' = 524288,
+  FI = 1048576,
+  ScoreIncreaseMods = 1049688,
+  RD = 2097152,
+  CN = 4194304,
+  Target = 8388608,
+  Key9 = 16777216,
+  KeyCoop = 33554432,
+  Key1 = 67108864,
+  Key3 = 134217728,
+  Key2 = 268435456,
+  KeyMod = 521109504,
+  FreeModAllowed = 522171579,
+  SV2 = 536870912,
+  MR = 1073741824,
+}

@@ -2,12 +2,15 @@ import type { IDiscordCommand, IDiscordCommandExecuteContext } from '@discord/ty
 import { countryFlagLink, profilePictureLink } from '@lib/osu';
 import { countryCodeToEmoji, EmbedColors } from '@lib/util';
 import {
+  getEnumFlags,
   getPlayerStats,
+  Mods,
   otrMatchLink,
   otrProfileLink,
   RatingAdjustmentType,
   RequestKeyType,
   Ruleset,
+  rulesetToStr,
   signedRatingDelta,
   tierToRoman,
   type PlayerStats,
@@ -15,18 +18,23 @@ import {
 import {
   ActionRowBuilder,
   bold,
+  chatInputApplicationCommandMention,
   ChatInputCommandInteraction,
+  Colors,
   ComponentType,
   EmbedBuilder,
   inlineCode,
+  italic,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   time,
   TimestampStyles,
+  userMention,
 } from 'discord.js';
 import { eq } from 'drizzle-orm';
 import { db, users } from '@db';
 import type { DiscordClient } from '@discord/client';
+import LinkCommand from './link';
 
 // TODO:
 // - emojis (tiers, mods)
@@ -58,7 +66,7 @@ const buildActionRow = (selected: SelectMenuValues) => {
       {
         label: 'Match Performance',
         value: 'match-performance',
-        description: 'Match performance statistics.',
+        description: 'Detailed match performance statistics.',
         emoji: '⚔️',
         default: selected === 'match-performance',
       },
@@ -97,8 +105,7 @@ const baseEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
       url: otrProfileLink(player.playerInfo.id),
     })
     .setFooter({
-      text: `First recorded tournament ${player.matchStats.periodStart.toUTCString()}`,
-      // iconURL: `ruleseticon`
+      text: `Ruleset ${rulesetToStr(player.ruleset)} • First recorded tournament ${player.matchStats.periodStart.toUTCString()}`,
     });
 };
 
@@ -210,22 +217,41 @@ const playerFrequencyEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: 
 };
 
 const modsEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
-  return baseEmbed(player, client)
-    .setDescription(`Showing detailed ${bold('modded performance')} statistics:`)
-    .addFields(
-      { name: 'Mod', value: '', inline: true },
-      { name: 'Play Count', value: '', inline: true },
-      { name: 'Avg. Score', value: '', inline: true },
-      ...player.modStats
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 6)
-        .flatMap((ms) => [
-          // TODO: mod emoji
-          { name: '', value: ms.mods.toString(), inline: true },
-          { name: '', value: ms.count.toString(), inline: true },
-          { name: '', value: (~~ms.averageScore).toLocaleString(), inline: true },
-        ])
-    );
+  // Remove edge cases where NF was not played
+  const stats = player.modStats.filter((ms) => ms.mods !== Mods.NM);
+  // Clamp number of stats shown at 6
+  const count = stats.length > 6 ? 6 : stats.length;
+
+  const embed = baseEmbed(player, client).setDescription(`Showing detailed ${bold('modded performance')} statistics:`);
+  if (count === 0) {
+    return embed.addFields({
+      name: '',
+      value: `${bold(player.playerInfo.username)} does not have any modded performances to display!`,
+    });
+  }
+
+  return embed.addFields(
+    { name: 'Mod', value: '', inline: true },
+    { name: 'Play Count', value: '', inline: true },
+    { name: 'Avg. Score', value: '', inline: true },
+    ...stats
+      .sort((a, b) => b.count - a.count)
+      .slice(0, count)
+      .flatMap((ms) => [
+        {
+          name: '',
+          value:
+            ms.mods === Mods.NF
+              ? Mods[Mods.NM]
+              : getEnumFlags(ms.mods & ~Mods.NF, Mods)
+                  .map((v) => Mods[v])
+                  .join(''),
+          inline: true,
+        },
+        { name: '', value: ms.count.toString(), inline: true },
+        { name: '', value: (~~ms.averageScore).toLocaleString(), inline: true },
+      ])
+  );
 };
 
 const buildEmbed = (embed: SelectMenuValues): EmbedBuilderWrapper => {
@@ -243,10 +269,13 @@ const buildEmbed = (embed: SelectMenuValues): EmbedBuilderWrapper => {
   }
 };
 
+const failEmbed = () => new EmbedBuilder().setColor(Colors.Red);
+
 export default class ProfileCommand implements IDiscordCommand {
   name = 'profile';
+  static name = 'profile';
   commandData = new SlashCommandBuilder()
-    .setName('profile')
+    .setName(this.name)
     .setDescription('Display statistics of a user.')
     .addIntegerOption((o) =>
       o
@@ -266,11 +295,8 @@ export default class ProfileCommand implements IDiscordCommand {
   public async execute({ interaction, client }: IDiscordCommandExecuteContext): Promise<void> {
     await interaction.deferReply();
 
-    // const player = await this.getPlayerFromOptions(interaction);
-    const player = await getPlayerStats('mrekk', RequestKeyType.Username);
-    if (!player) {
-      // TODO: handle this error
-      await interaction.editReply({ content: 'xd' });
+    const player = await this.getPlayerFromOptions(interaction);
+    if (!player || interaction.replied) {
       return;
     }
 
@@ -307,15 +333,44 @@ export default class ProfileCommand implements IDiscordCommand {
     const osuUsername = interaction.options.getString(optionKeys.Username);
 
     if (osuUsername) {
-      return getPlayerStats(osuUsername, RequestKeyType.Username, ruleset);
+      const player = await getPlayerStats(osuUsername, RequestKeyType.Username, ruleset);
+      if (!player) {
+        await interaction.editReply({
+          embeds: [failEmbed().setDescription(`Could not find an o!TR player for ${inlineCode(osuUsername)}`)],
+        });
+      }
+      return player;
     }
 
-    const target = discordUser ? discordUser.id : interaction.user.id;
-    const [user] = await db.select().from(users).where(eq(users.id, target));
+    const target = discordUser ?? interaction.user;
+    const [user] = await db.select().from(users).where(eq(users.id, target.id));
     if (!user) {
+      const client = interaction.client as DiscordClient;
+      const embed = failEmbed();
+      if (discordUser) {
+        embed.setDescription(
+          `Discord user ${userMention(discordUser.id)} has not linked their osu! account!\n` +
+            `${italic('Try searching using their osu! username instead.')}`
+        );
+      } else {
+        const cmdId = client.application?.commands.cache.find((c) => c.name === LinkCommand.name)?.id;
+        embed.setDescription(
+          `You have not linked your osu! account. Use ${cmdId ? chatInputApplicationCommandMention(LinkCommand.name, cmdId) : inlineCode(`/${LinkCommand.name}`)} to link your accounts.`
+        );
+      }
+      await interaction.editReply({
+        embeds: [embed],
+      });
       return;
     }
 
-    return getPlayerStats(user.osuId, RequestKeyType.Osu, ruleset);
+    const player = await getPlayerStats(user.osuId, RequestKeyType.Osu, ruleset);
+    if (!player) {
+      await interaction.editReply({
+        embeds: [failEmbed().setDescription(`Could not find an o!TR player for ${userMention(target.id)}`)],
+      });
+    }
+
+    return player;
   }
 }

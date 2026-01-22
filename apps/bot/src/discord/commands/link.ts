@@ -40,7 +40,8 @@ const OAUTH_POLLING_INTERVAL = 5000;
 
 export default class LinkCommand implements IDiscordCommand {
   name = 'link';
-  commandData = new SlashCommandBuilder().setName('link').setDescription('Link your discord with an osu! profile.');
+  static name = 'link';
+  commandData = new SlashCommandBuilder().setName(this.name).setDescription('Link your discord with an osu! profile.');
 
   /** Collection of discord ids with a link attempt in progress. */
   linksInProgress: Collection<string, OAuthStatePayload> = new Collection();

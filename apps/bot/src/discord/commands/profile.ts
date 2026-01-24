@@ -17,6 +17,7 @@ import {
 } from '@otr';
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   bold,
   chatInputApplicationCommandMention,
   ChatInputCommandInteraction,
@@ -35,6 +36,7 @@ import { eq } from 'drizzle-orm';
 import { db, users } from '@db';
 import type { DiscordClient } from '@discord/client';
 import LinkCommand from './link';
+import { createRatingGraph } from '@lib/chart';
 
 // TODO:
 // - emojis (tiers, mods)
@@ -112,13 +114,15 @@ const baseEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
 const compactEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
   const highestRating = player.rating.adjustments.sort((a, b) => b.ratingAfter - a.ratingAfter)[0]!;
 
-  return baseEmbed(player, client).setDescription(
-    `Tier: ${client.emojiManager.getTierEmoji(player.rating.tierProgress.currentTier, player.rating.tierProgress.currentSubTier)} ${player.rating.tierProgress.currentTier} ${tierToRoman(player.rating.tierProgress.currentSubTier)}\n` +
-      `Percentile: ${inlineCode(player.rating.percentile.toFixed(2))}\n` +
-      `Tournaments: ${inlineCode(player.rating.tournamentsPlayed.toString())}\n` +
-      `Matches: ${inlineCode(player.rating.matchesPlayed.toString())} (${inlineCode((player.rating.winRate * 100).toFixed(2) + '%')} W/L)\n` +
-      `Peak rating: ${inlineCode(highestRating.ratingAfter.toFixed(2))} (${time(highestRating.timestamp, TimestampStyles.ShortDate)})`
-  );
+  return baseEmbed(player, client)
+    .setDescription(
+      `Tier: ${client.emojiManager.getTierEmoji(player.rating.tierProgress.currentTier, player.rating.tierProgress.currentSubTier)} ${player.rating.tierProgress.currentTier} ${tierToRoman(player.rating.tierProgress.currentSubTier)}\n` +
+        `Percentile: ${inlineCode(player.rating.percentile.toFixed(2))}\n` +
+        `Tournaments: ${inlineCode(player.rating.tournamentsPlayed.toString())}\n` +
+        `Matches: ${inlineCode(player.rating.matchesPlayed.toString())} (${inlineCode((player.rating.winRate * 100).toFixed(2) + '%')} W/L)\n` +
+        `Peak rating: ${inlineCode(highestRating.ratingAfter.toFixed(2))} (${time(highestRating.timestamp, TimestampStyles.ShortDate)})`
+    )
+    .setImage(`attachment://${player.playerInfo.id}.png`);
 };
 
 const matchPerformanceEmbed: EmbedBuilderWrapper = (player: PlayerStats, client: DiscordClient) => {
@@ -300,10 +304,14 @@ export default class ProfileCommand implements IDiscordCommand {
       return;
     }
 
+    const chartPath = await createRatingGraph(player);
+    const chartFile = new AttachmentBuilder(chartPath);
+
     // Send initial compact embed
     const reply = await interaction.editReply({
       embeds: [buildEmbed('compact')(player, client)],
       components: [buildActionRow('compact')],
+      files: [chartFile],
     });
 
     const collector = reply.createMessageComponentCollector({
@@ -318,6 +326,7 @@ export default class ProfileCommand implements IDiscordCommand {
       await i.update({
         embeds: [buildEmbed(embed)(player, client)],
         components: [buildActionRow(embed)],
+        files: embed === 'compact' ? [chartFile] : [],
       });
     });
 

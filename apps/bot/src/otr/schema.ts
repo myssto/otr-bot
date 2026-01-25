@@ -127,3 +127,17 @@ export const playerStatsSchema = z.object({
 });
 
 export type PlayerStats = z.infer<typeof playerStatsSchema>;
+
+export const leaderboardSchema = z.object({
+  page: z.number(),
+  pageSize: z.number(),
+  pages: z.number(),
+  total: z.number(),
+  ruleset: z.enum(Ruleset),
+  leaderboard: z.array(
+    playerRatingSchema.omit({
+      adjustments: true,
+      isProvisional: true,
+    })
+  ),
+});

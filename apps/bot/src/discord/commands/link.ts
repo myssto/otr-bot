@@ -1,5 +1,5 @@
 import { Collection, Colors, EmbedBuilder, inlineCode, MessageFlags, SlashCommandBuilder } from 'discord.js';
-import type { IDiscordCommand, IDiscordCommandExecuteContext } from '../types/command';
+import type { IDiscordCommand, IDiscordCommandExecuteContext } from '@discord/types/command';
 import {
   hmacSign,
   importHmacKey,

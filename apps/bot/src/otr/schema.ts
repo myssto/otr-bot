@@ -135,9 +135,17 @@ export const leaderboardSchema = z.object({
   total: z.number(),
   ruleset: z.enum(Ruleset),
   leaderboard: z.array(
-    playerRatingSchema.omit({
-      adjustments: true,
-      isProvisional: true,
-    })
+    playerRatingSchema
+      .extend({
+        player: playerInfoCompactSchema.omit({
+          defaultRuleset: true,
+        }),
+      })
+      .omit({
+        adjustments: true,
+        isProvisional: true,
+      })
   ),
 });
+
+export type Leaderboard = z.infer<typeof leaderboardSchema>;

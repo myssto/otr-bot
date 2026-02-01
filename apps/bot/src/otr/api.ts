@@ -1,9 +1,16 @@
 import z from 'zod';
-import { playerStatsSchema, type PlayerStats } from './schema';
-import { queryParamKeys, RequestKeyType, Ruleset } from './enums';
+import { leaderboardSchema, playerStatsSchema, type Leaderboard, type PlayerStats } from './schema';
+import { RequestKeyType, Ruleset } from './enums';
 
 const OTR_API_BASEURL = 'https://otr.stagec.xyz/api';
-const apiRoute = (endpoint: string) => `${OTR_API_BASEURL}${endpoint}`;
+const apiRoute = (endpoint: string) => new URL(`${OTR_API_BASEURL}${endpoint}`);
+
+const QUERY_PARAM_KEYS = {
+  KeyType: 'keyType',
+  Ruleset: 'ruleset',
+  Page: 'page',
+  PageSize: 'pageSize',
+};
 
 async function fetchWrap<T extends z.ZodObject>(
   schema: T,
@@ -41,10 +48,18 @@ export async function getPlayerStats(
   keyType: RequestKeyType,
   ruleset?: Ruleset | null
 ): Promise<PlayerStats | undefined> {
-  const url = new URL(apiRoute(`/players/${id}/stats`));
-  url.searchParams.set(queryParamKeys.KeyType, keyType);
+  const url = apiRoute(`/players/${id}/stats`);
+  url.searchParams.set(QUERY_PARAM_KEYS.KeyType, keyType);
   if (ruleset) {
-    url.searchParams.set(queryParamKeys.Ruleset, ruleset.toString());
+    url.searchParams.set(QUERY_PARAM_KEYS.Ruleset, ruleset.toString());
   }
   return fetchWrap(playerStatsSchema, url);
+}
+
+export async function getLeaderboard(page: number): Promise<Leaderboard | undefined> {
+  const url = apiRoute(`/leaderboard`);
+  url.searchParams.set(QUERY_PARAM_KEYS.Page, page.toString());
+  url.searchParams.set(QUERY_PARAM_KEYS.PageSize, '100');
+
+  return fetchWrap(leaderboardSchema, url);
 }

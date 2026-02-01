@@ -40,9 +40,7 @@ import { createRatingGraph } from '@lib/chart';
 import { addRulesetIntegerOption } from '@discord/lib/command-util';
 
 // TODO:
-// - emojis (tiers, mods)
 // - validate profile data (provisional ratings)
-// - err handling for data fetching
 
 const optionKeys = {
   Ruleset: 'ruleset',

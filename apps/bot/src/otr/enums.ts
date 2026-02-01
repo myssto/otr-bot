@@ -109,11 +109,6 @@ export const RequestKeyType = {
 
 export type RequestKeyType = (typeof RequestKeyType)[keyof typeof RequestKeyType];
 
-export const queryParamKeys = {
-  KeyType: 'keyType',
-  Ruleset: 'ruleset',
-};
-
 export enum Mods {
   NM = 0,
   NF = 1,

@@ -128,24 +128,26 @@ export const playerStatsSchema = z.object({
 
 export type PlayerStats = z.infer<typeof playerStatsSchema>;
 
+const leaderboardItemSchema = playerRatingSchema
+  .extend({
+    player: playerInfoCompactSchema.omit({
+      defaultRuleset: true,
+    }),
+  })
+  .omit({
+    adjustments: true,
+    isProvisional: true,
+  });
+
+export type LeaderboardItem = z.infer<typeof leaderboardItemSchema>;
+
 export const leaderboardSchema = z.object({
   page: z.number(),
   pageSize: z.number(),
   pages: z.number(),
   total: z.number(),
   ruleset: z.enum(Ruleset),
-  leaderboard: z.array(
-    playerRatingSchema
-      .extend({
-        player: playerInfoCompactSchema.omit({
-          defaultRuleset: true,
-        }),
-      })
-      .omit({
-        adjustments: true,
-        isProvisional: true,
-      })
-  ),
+  leaderboard: z.array(leaderboardItemSchema),
 });
 
 export type Leaderboard = z.infer<typeof leaderboardSchema>;

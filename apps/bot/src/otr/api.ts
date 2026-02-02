@@ -1,6 +1,6 @@
 import z from 'zod';
 import { leaderboardSchema, playerStatsSchema, type Leaderboard, type PlayerStats } from './schema';
-import { RequestKeyType, Ruleset } from './enums';
+import { ApiRatingTiers, RequestKeyType, Ruleset } from './enums';
 
 const OTR_API_BASEURL = 'https://otr.stagec.xyz/api';
 const apiRoute = (endpoint: string) => new URL(`${OTR_API_BASEURL}${endpoint}`);
@@ -56,7 +56,22 @@ export async function getPlayerStats(
   return fetchWrap(playerStatsSchema, url);
 }
 
-export async function getLeaderboard(page: number): Promise<Leaderboard | undefined> {
+export type GetLeaderboardOptions = {
+  page: number;
+  ruleset?: Ruleset;
+  country?: string;
+  minOsuRank?: number;
+  maxOsuRank?: number;
+  minRating?: number;
+  maxRating?: number;
+  minMatches?: number;
+  maxMatches?: number;
+  minWinRate?: number;
+  maxWinRate?: number;
+  tiers?: ApiRatingTiers[];
+};
+
+export async function getLeaderboard({ page }: GetLeaderboardOptions): Promise<Leaderboard | undefined> {
   const url = apiRoute(`/leaderboard`);
   url.searchParams.set(QUERY_PARAM_KEYS.Page, page.toString());
   url.searchParams.set(QUERY_PARAM_KEYS.PageSize, '100');

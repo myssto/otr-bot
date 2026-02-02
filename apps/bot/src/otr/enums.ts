@@ -97,6 +97,28 @@ export const RatingTiers = {
 
 export type RatingTiers = (typeof RatingTiers)[keyof typeof RatingTiers];
 
+export const ApiRatingTiers = {
+  EliteGrandmaster: 'eliteGrandmaster',
+
+  Grandmaster: 'grandmaster',
+
+  Master: 'master',
+
+  Diamond: 'diamond',
+
+  Emerald: 'emerald',
+
+  Platinum: 'platinum',
+
+  Gold: 'gold',
+
+  Silver: 'silver',
+
+  Bronze: 'bronze',
+} as const;
+
+export type ApiRatingTiers = (typeof ApiRatingTiers)[keyof typeof ApiRatingTiers];
+
 export const SubTiers = [1, 2, 3] as const;
 
 export const RequestKeyType = {

@@ -2,12 +2,21 @@ import type { DiscordClient } from '@discord/client';
 import { addRulesetIntegerOption } from '@discord/lib/command-util';
 import type { IDiscordCommand, IDiscordCommandExecuteContext } from '@discord/types/command';
 import { EmbedColors } from '@lib/util';
-import { getLeaderboard, otrProfileLink, type LeaderboardItem } from '@otr';
+import {
+  ApiRatingTiers,
+  getLeaderboard,
+  otrProfileLink,
+  RatingTiers,
+  Ruleset,
+  type GetLeaderboardOptions,
+  type LeaderboardItem,
+} from '@otr';
 import {
   ActionRowBuilder,
   bold,
   ButtonBuilder,
   ButtonStyle,
+  ChatInputCommandInteraction,
   ComponentType,
   EmbedBuilder,
   inlineCode,
@@ -20,6 +29,12 @@ const BUTTON_IDS = {
   Back: 'btn-back',
   Next: 'btn-next',
   Last: 'btn-last',
+};
+
+const OPTION_KEYS = {
+  Ruleset: 'ruleset',
+  Country: 'country',
+  Tier: 'tier',
 };
 
 // TODO: Custom emojis w/ transparent bg
@@ -81,7 +96,7 @@ const leaderboardEmbed = (data: LeaderboardItem[], curPage: number, maxPages: nu
       {
         name: '',
         value: italic(
-          `${bold('Note')}: High rating values are not necessarily indicitive of "skill".\nRead more about what your rating actually means [here](https://docs.otr.stagec.xyz/Rating-Framework/Rating-FAQ).`
+          `${bold('Note')}: Rating values are not necessarily indicitive of "skill".\nRead more about what your rating actually means [here](https://docs.otr.stagec.xyz/Rating-Framework/Rating-FAQ "o!TR Rating FAQ").`
         ),
       }
     );
@@ -93,7 +108,30 @@ export default class LeaderboardCommand implements IDiscordCommand {
   commandData = new SlashCommandBuilder()
     .setName(this.name)
     .setDescription('Display leaderboard rankings.')
-    .addIntegerOption(addRulesetIntegerOption);
+    .addIntegerOption(addRulesetIntegerOption)
+    .addStringOption((o) =>
+      o
+        .setName(OPTION_KEYS.Country)
+        .setDescription('Filter for a specific country (ISO country code).')
+        .setMinLength(2)
+        .setMaxLength(2)
+    )
+    .addStringOption((o) =>
+      o
+        .setName(OPTION_KEYS.Tier)
+        .setDescription('Filter for a specific rating tier.')
+        .addChoices(
+          { name: RatingTiers.EliteGrandmaster, value: ApiRatingTiers.EliteGrandmaster },
+          { name: RatingTiers.Grandmaster, value: ApiRatingTiers.Grandmaster },
+          { name: RatingTiers.Master, value: ApiRatingTiers.Master },
+          { name: RatingTiers.Diamond, value: ApiRatingTiers.Diamond },
+          { name: RatingTiers.Emerald, value: ApiRatingTiers.Emerald },
+          { name: RatingTiers.Platinum, value: ApiRatingTiers.Platinum },
+          { name: RatingTiers.Gold, value: ApiRatingTiers.Gold },
+          { name: RatingTiers.Silver, value: ApiRatingTiers.Silver },
+          { name: RatingTiers.Bronze, value: ApiRatingTiers.Bronze }
+        )
+    );
 
   public async execute({ interaction, client }: IDiscordCommandExecuteContext): Promise<void> {
     await interaction.deferReply();
@@ -161,5 +199,17 @@ export default class LeaderboardCommand implements IDiscordCommand {
     collector.once('end', async () => {
       await interaction.editReply({ components: [] });
     });
+  }
+
+  private parseOptions(interaction: ChatInputCommandInteraction): Omit<GetLeaderboardOptions, 'page'> {
+    const ruleset = interaction.options.getInteger(OPTION_KEYS.Ruleset) as Ruleset | null;
+    const country = interaction.options.getString(OPTION_KEYS.Country);
+    const tier = interaction.options.getString(OPTION_KEYS.Tier) as ApiRatingTiers | null;
+
+    return {
+      ruleset,
+      country,
+      tiers: tier ? [tier] : null,
+    };
   }
 }

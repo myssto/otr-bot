@@ -58,17 +58,17 @@ export async function getPlayerStats(
 
 export type GetLeaderboardOptions = {
   page: number;
-  ruleset?: Ruleset;
-  country?: string;
-  minOsuRank?: number;
-  maxOsuRank?: number;
-  minRating?: number;
-  maxRating?: number;
-  minMatches?: number;
-  maxMatches?: number;
-  minWinRate?: number;
-  maxWinRate?: number;
-  tiers?: ApiRatingTiers[];
+  ruleset?: Ruleset | null;
+  country?: string | null;
+  minOsuRank?: number | null;
+  maxOsuRank?: number | null;
+  minRating?: number | null;
+  maxRating?: number | null;
+  minMatches?: number | null;
+  maxMatches?: number | null;
+  minWinRate?: number | null;
+  maxWinRate?: number | null;
+  tiers?: ApiRatingTiers[] | null;
 };
 
 export async function getLeaderboard({ page }: GetLeaderboardOptions): Promise<Leaderboard | undefined> {

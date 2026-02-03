@@ -33,6 +33,9 @@ async function fetchWrap<T extends z.ZodObject>(
     );
 
     if (!res.ok) {
+      console.log('API call returned non-200 status:');
+      console.log(`Route: ${input}`);
+      console.log(await res.json());
       return;
     }
 
@@ -41,6 +44,22 @@ async function fetchWrap<T extends z.ZodObject>(
   } catch (err) {
     console.log(err);
   }
+}
+
+function addObjectToSearchParams(params: URLSearchParams, obj: Record<string, unknown>): URLSearchParams {
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined || value === null) continue;
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, String(item));
+      }
+    } else {
+      params.append(key, String(value));
+    }
+  }
+
+  return params;
 }
 
 export async function getPlayerStats(
@@ -71,10 +90,10 @@ export type GetLeaderboardOptions = {
   tiers?: ApiRatingTiers[] | null;
 };
 
-export async function getLeaderboard({ page }: GetLeaderboardOptions): Promise<Leaderboard | undefined> {
+export async function getLeaderboard(options: GetLeaderboardOptions): Promise<Leaderboard | undefined> {
   const url = apiRoute(`/leaderboard`);
-  url.searchParams.set(QUERY_PARAM_KEYS.Page, page.toString());
   url.searchParams.set(QUERY_PARAM_KEYS.PageSize, '100');
+  addObjectToSearchParams(url.searchParams, options);
 
   return fetchWrap(leaderboardSchema, url);
 }

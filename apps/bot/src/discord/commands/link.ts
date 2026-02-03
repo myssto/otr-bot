@@ -41,7 +41,9 @@ const OAUTH_POLLING_INTERVAL = 5000;
 export default class LinkCommand implements IDiscordCommand {
   name = 'link';
   static name = 'link';
-  commandData = new SlashCommandBuilder().setName(this.name).setDescription('Link your discord with an osu! profile.');
+  commandData = new SlashCommandBuilder()
+    .setName(this.name)
+    .setDescription('Link your discord account with an osu! account.');
 
   /** Collection of discord ids with a link attempt in progress. */
   linksInProgress: Collection<string, OAuthStatePayload> = new Collection();
@@ -95,6 +97,7 @@ export default class LinkCommand implements IDiscordCommand {
       break;
     }
 
+    this.linksInProgress.delete(discordId);
     if (!oauthResponse) {
       return;
     }
@@ -116,7 +119,6 @@ export default class LinkCommand implements IDiscordCommand {
       })
       .returning();
 
-    this.linksInProgress.delete(discordId);
     return user;
   }
 }

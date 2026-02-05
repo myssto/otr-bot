@@ -67,20 +67,3 @@ export const rulesetToStr = (ruleset: Ruleset): string => {
       return 'mania7k';
   }
 };
-
-/** Produces an array of individual flags from a bitwise enumeration */
-export function getEnumFlags<T extends object>(value: number | undefined, enumType: T) {
-  const flags: T[keyof T][] = [];
-
-  if (!value) {
-    return flags;
-  }
-
-  for (const [enumKey, enumValue] of Object.entries(enumType)) {
-    if (typeof enumValue === 'number' && enumValue !== 0 && (value & enumValue) === enumValue) {
-      flags.push(enumType[enumKey as keyof T]);
-    }
-  }
-
-  return flags;
-}

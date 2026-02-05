@@ -1,3 +1,131 @@
+/** Basic enum metadata */
+type EnumMetadata = {
+  text: string;
+  description: string;
+};
+
+type EnumMetadataWithEmoji = {
+  emojiName: string;
+} & EnumMetadata;
+
+/**
+ * A collection of metadata describing each entry in an enumeration
+ * @template T Enumeration type
+ * @template M Metadata type
+ */
+type EnumMetadataCollection<T extends number | string, M extends EnumMetadata> = {
+  [key in T]: M;
+};
+
+/**
+ * Interfaces an object that stores enum metadata
+ * @template T Enumeration type
+ * @template M Metadata type
+ */
+interface IEnumHelperBase<T extends number | string, M extends EnumMetadata> {
+  /** Collection of metadata */
+  readonly metadata: EnumMetadataCollection<T, M>;
+}
+
+/**
+ * Interfaces an object that helps with parsing enums
+ * @template T Enumeration type
+ * @template M Metadata type
+ */
+export interface IEnumHelper<T extends number | string, M extends EnumMetadata = EnumMetadata> extends IEnumHelperBase<
+  T,
+  M
+> {
+  /**
+   * Gets the metadata describing a given enum value
+   * @param value Enum value
+   * @returns Metadata describing the given enum value
+   */
+  getMetadata: (value: T) => M;
+}
+
+/**
+ * Creates a default implementation of an {@link IEnumHelper}
+ *
+ * {@link IEnumHelper.metadata} should always be overwritten
+ * @template T Enumeration type
+ * @template M Metadata type
+ */
+const defaultEnumHelper = <T extends number | string, M extends EnumMetadata = EnumMetadata>(): IEnumHelper<T, M> => ({
+  metadata: {} as EnumMetadataCollection<T, M>,
+
+  getMetadata(value) {
+    return this.metadata[value];
+  },
+});
+
+/**
+ * Interfaces an object that helps with parsing bitwise enums
+ * @template T Bitwise enumeration type
+ * @template M Metadata type
+ */
+export interface IBitwiseEnumHelper<T extends number, M extends EnumMetadata = EnumMetadata> extends IEnumHelperBase<
+  T,
+  M
+> {
+  /**
+   * Gets a list of metadata describing each flag in a given bitwise enum value
+   * @param value Bitwise enum value
+   * @returns Metadata describing each flag in the given bitwise enum value
+   */
+  getMetadata: (value: T) => M[];
+
+  /**
+   * Gets a list of individual flags in a given bitwise enum value
+   * @param value Bitwise enum value
+   * @returns A list of individual flags in the given bitwise enum value
+   */
+  getFlags: (value: T) => T[];
+}
+
+/** Produces an array of individual flags from a bitwise enumeration */
+export function getEnumFlags<T extends object>(value: number | undefined, enumType: T) {
+  const flags: T[keyof T][] = [];
+
+  if (!value) {
+    return flags;
+  }
+
+  for (const [enumKey, enumValue] of Object.entries(enumType)) {
+    if (typeof enumValue === 'number' && enumValue !== 0 && (value & enumValue) === enumValue) {
+      flags.push(enumType[enumKey as keyof T]);
+    }
+  }
+
+  return flags;
+}
+
+/**
+ * Creates a default implementation of an {@link IBitwiseEnumHelper}
+ *
+ * {@link IBitwiseEnumHelper.metadata} should always be overwritten
+ * @template T Enumeration type
+ * @template M Metadata type
+ */
+const defaultBitwiseEnumHelper = <T extends number, M extends EnumMetadata = EnumMetadata>(
+  enumObject: object
+): IBitwiseEnumHelper<T, M> => ({
+  metadata: {} as EnumMetadataCollection<T, M>,
+
+  getFlags(value) {
+    return getEnumFlags(value, enumObject);
+  },
+
+  getMetadata(value) {
+    return this.getFlags(value).map((flag) => this.metadata[flag]);
+  },
+});
+
+const noneEnumMetadata: EnumMetadata = {
+  text: 'None',
+  description: 'No description',
+};
+
 /** osu! Rulesets. */
 export const Ruleset = {
   /** Standard. */
@@ -20,6 +148,43 @@ export const Ruleset = {
 } as const;
 
 export type Ruleset = (typeof Ruleset)[keyof typeof Ruleset];
+
+export const RulesetEnumHelper: IEnumHelper<Ruleset, EnumMetadataWithEmoji> = {
+  ...defaultEnumHelper(),
+
+  metadata: {
+    [Ruleset.Osu]: {
+      text: 'osu!',
+      emojiName: 'osu',
+      description: '',
+    },
+    [Ruleset.Taiko]: {
+      text: 'osu!taiko',
+      emojiName: 'taiko',
+      description: '',
+    },
+    [Ruleset.Catch]: {
+      text: 'osu!catch',
+      emojiName: 'catch',
+      description: '',
+    },
+    [Ruleset.ManiaOther]: {
+      text: 'osu!mania (other)',
+      emojiName: 'mania',
+      description: '',
+    },
+    [Ruleset.Mania4k]: {
+      text: 'osu!mania 4K',
+      emojiName: 'mania4k',
+      description: '',
+    },
+    [Ruleset.Mania7k]: {
+      text: 'osu!mania 7K',
+      emojiName: 'mania7k',
+      description: '',
+    },
+  },
+};
 
 /** Denotes the source of a rating adjustment. */
 export const RatingAdjustmentType = {

@@ -2,7 +2,7 @@ import { ApplicationEmoji, Collection } from 'discord.js';
 import type { DiscordClient } from '../client';
 import { walkDir } from '@lib/util';
 import path from 'node:path';
-import { RatingTiers, Ruleset, rulesetToStr } from '@otr';
+import { RatingTiers, Ruleset, RulesetEnumHelper } from '@otr';
 
 export class EmojiManager {
   private emojis: Collection<string, string> = new Collection();
@@ -44,7 +44,9 @@ export class EmojiManager {
    * @param ruleset Ruleset.
    */
   public getRulesetEmoji(ruleset: Ruleset): string {
-    const emoji = this.client.application?.emojis.cache.find((e) => e.name === `ruleset_${rulesetToStr(ruleset)}`);
+    const emoji = this.client.application?.emojis.cache.find(
+      (e) => e.name === `ruleset_${RulesetEnumHelper.getMetadata(ruleset).text}`
+    );
     return EmojiManager.identifierOrPlaceholder(emoji);
   }
 

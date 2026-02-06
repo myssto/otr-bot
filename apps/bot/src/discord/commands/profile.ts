@@ -10,7 +10,7 @@ import {
   RatingAdjustmentType,
   RequestKeyType,
   Ruleset,
-  rulesetToStr,
+  RulesetEnumHelper,
   signedRatingDelta,
   tierToRoman,
   type PlayerStats,
@@ -106,7 +106,7 @@ const baseEmbed: EmbedBuilderWrapper = (player: PlayerStats) => {
       url: otrProfileLink(player.playerInfo.id),
     })
     .setFooter({
-      text: `Ruleset ${rulesetToStr(player.ruleset)} • First recorded tournament ${player.matchStats.periodStart.toUTCString()}`,
+      text: `Ruleset ${RulesetEnumHelper.getMetadata(player.ruleset).text} • First recorded tournament ${player.matchStats.periodStart.toUTCString()}`,
     });
 };
 

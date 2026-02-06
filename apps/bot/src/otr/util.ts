@@ -1,5 +1,3 @@
-import { Ruleset } from './enums';
-
 /**
  * Formats a link to an o!TR player profile.
  * @param id o!TR player id OR osu! username.
@@ -45,25 +43,4 @@ export const signedRatingDelta = (delta: number): string => {
   const result = delta.toFixed(2);
 
   return delta > 0 ? '+' + result : result;
-};
-
-/**
- * Gets the string identifier of a ruleset.
- * @param ruleset Ruleset.
- */
-export const rulesetToStr = (ruleset: Ruleset): string => {
-  switch (ruleset) {
-    case Ruleset.Osu:
-      return 'osu';
-    case Ruleset.Taiko:
-      return 'taiko';
-    case Ruleset.Catch:
-      return 'catch';
-    case Ruleset.ManiaOther:
-      return 'mania';
-    case Ruleset.Mania4k:
-      return 'mania4k';
-    case Ruleset.Mania7k:
-      return 'mania7k';
-  }
 };
